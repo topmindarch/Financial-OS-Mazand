@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mazand
+      POSTGRES_USER: mazand
+      POSTGRES_PASSWORD: change_this_password
+    volumes:
+      - mazand_pg:/var/lib/postgresql/data
+      - ./app/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mazand -d mazand"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "127.0.0.1:54329:5432"
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://mazand:change_this_password@db:5432/mazand
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  mazand_pg:
